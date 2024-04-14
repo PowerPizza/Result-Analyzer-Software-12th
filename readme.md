@@ -42,3 +42,5 @@ for example : 4 + 1 = 5 where no_of_best_subjects = 4 and the 1 here for english
 5. Global Dominant Subjects : Its helps to control the column format of table like if we want subject format english
 then Physics chemistry .... so we can use this entry to do that. Just provide subject codes and seperate them
 using ','.
+
+### [Download for Windows 10 (x64)](https://drive.google.com/drive/folders/1txIDe8C4zpgAWWFcaA6hIGqVmqLnF5XQ?usp=sharing)
