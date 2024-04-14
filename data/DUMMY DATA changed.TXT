@@ -1,0 +1,50 @@
+
+
+DATE:-13/08/2017   X.Y.Z.R. - SENIOR SCHOOL CERTIFICATE EXAMINATION (MAIN)-2017      REGION: XYZ        PAGE:-       1
+                                               DUMMY DATTA
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ROLL    F S NAME OF CANDIDATE                                   --------------------SUBJECTS------------------  INT-SB-GRD   RES                COMP
+NO      L X                                                     SUB CODE  SUB CD  SUB CD  SUB CD  SUB CD  SUB CD  GR1 GR2 GR3                     SUB
+                                                                MARKS GRADE  MKS GR  MKS GR  MKS GR  MKS GR  MKS GR 
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+SCHOOL : - 60834  SSD  GHAZIABAD UP  
+
+2178469   M KRISHN RAI                                         301     042     043     041     048              A1 A1 A1    PASS                      
+                                                                085  B1 095  A1 095  A1 088  A2 091  A2        
+2178470   F ANUL YADAV                                         301     042     043     044     065              A1 A1 A1    PASS                      
+                                                                087  A2 062  C2 058  D1 065  C2 079  C1        
+2167871   M RAMA  KUMAR                                        301     065     042     043     041              A1 A1 A1    PASS                      
+                                                                089  A2 090  A2 078  B1 089  A2 095  A1        
+2167845   M ABHIJEET PAL                                       301     065     042     043     041              A1 A1 A1    PASS                      
+                                                                086  B1 087  B1 091  A1 090  A2 091  A2        
+2167846   M ABHISHEK KUMAR                                     301     065     042     043     041              A1 A1 A1    PASS                      
+                                                                078  C1 084  B2 082  A2 094  A1 093  A1        
+2167847   M ABHISHEK YADAV                                     301     048     042     043     041              A2 A1 A1    PASS                      
+                                                                061  D1 072  C2 049  D2 060  C2 043  D2        
+2167848   M ADARSH PANDEY                                      301     042     043     041     065              A1 A1 A1    PASS                      
+                                                                075  C1 095  A1 093  A1 096  A1 091  A2        
+
+2167849   M ADITYA                                             301     048     042     043     041              A1 A1 A1    PASS                      
+                                                                072  C2 086  B1 089  A1 083  B1 066  B2        
+                   
+                                                                076  C1 085  B1 069  B2 067  C1 077  B2        
+
+DATE:-13/08/2017   X.Y.Z.R. - SENIOR SCHOOL CERTIFICATE EXAMINATION (MAIN)-2017      REGION: XYZ        PAGE:-       2
+                                               DUMMY DATTA
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ROLL    F S NAME OF CANDIDATE                                   --------------------SUBJECTS------------------  INT-SB-GRD   RES                COMP
+NO      L X                                                     SUB CD  SUB CD  SUB CD  SUB CD  SUB CD  SUB CD  GR1 GR2 GR3                     SUB
+                                                                MKS GR  MKS GR  MKS GR  MKS GR  MKS GR  MKS GR 
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+SCHOOL : - 60171   D H R T SARASWATI V M NEHRU NAGAR GHAZIABAD UP  
+
+2167850    F DEEPAL                                             301     048     042     043     041              A1 A1 A1    PASS                      
+                                                                084  B1 078  C1 068  C1 074  B2 070  B2        
+2167851   M DEV SHARMA                                         301     048     042     043     041              A1 A1 A1    PASS                      
+                                                                091  A1 093  A2 086  A2 074  B2 072  B1        
+2167852   M DUSHYANT SHARMA                                    301     065     042     043     041              A1 A1 A1    PASS                      
+                                                                082  B2 076  C1 077  B1 077  B1 052  C2        

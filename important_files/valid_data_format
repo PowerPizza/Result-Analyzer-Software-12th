@@ -1,0 +1,15 @@
+DATA_LINE1 :- ROLL_NO GENDER NAME SUB_CODE1 SUB_CODE2 SUB_CODE3......SUB_CODE(n) GRADE1 GRADE2 GRADE3 RESULT
+DATA_LINE2 :- SUB1_MARKS SUB1_GRADE SUB2 MARKS SUB2_GRADE ...... SUB(n)_MARKS SUB(n)_GRADE
+********************************
+DATA_LINE1
+1. ROLL_NO must be of 7 digits only.
+2. NAME can contain space its no problem.
+3. SUB_CODE1 to infinity works just remember that DATA_LINE2 should be contain marks and grade of SUB_CODE(n) in proper format.
+4. (optional) GRADE1 GRADE2 GRADE3 not actually required software works same if its present of not.
+5. RESULT it should be fail or pass and its required.
+
+DATA_LINE2
+1. SUB(n)_MARKS and SUB(n)_GRADE repersents the marks and grade of SUB_CODE(n) subject.
+
+note: DATA_LINE1 AND DATA_LINE2 both are required if any of one missing so software will not work on whole data.
+********************************

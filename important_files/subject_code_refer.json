@@ -1,0 +1,353 @@
+{
+    "027": {
+        "Name": "HISTORY"
+    },
+    "028": {
+        "Name": "POLITICAL SCIENCE"
+    },
+    "029": {
+        "Name": "GEOGRAPHY"
+    },
+    "030": {
+        "Name": "ECONOMICS"
+    },
+    "031": {
+        "Name": "CAR. MUSIC VOCAL"
+    },
+    "032": {
+        "Name": "CAR. MUSIC MEL INS"
+    },
+    "033": {
+        "Name": "CAR.PER INS. MRIDANGAM"
+    },
+    "034": {
+        "Name": "HIND MUSIC.VOCAL"
+    },
+    "035": {
+        "Name": "HIND. MUSIC MEL INS."
+    },
+    "036": {
+        "Name": "HIND.PER INS."
+    },
+    "037": {
+        "Name": "PSYCHOLOGY"
+    },
+    "039": {
+        "Name": "SOCIOLOGY"
+    },
+    "041": {
+        "Name": "MATHEMATICS"
+    },
+    "042": {
+        "Name": "PHYSICS"
+    },
+    "043": {
+        "Name": "CHEMISTRY"
+    },
+    "044": {
+        "Name": "BIOLOGY"
+    },
+    "045": {
+        "Name": "BIOTECHNOLOGY"
+    },
+    "046": {
+        "Name": "ENGG. GRAPHICS"
+    },
+    "048": {
+        "Name": "PHYSICAL EDUCATION"
+    },
+    "049": {
+        "Name": "PAINTING"
+    },
+    "050": {
+        "Name": "GRAPHICS"
+    },
+    "051": {
+        "Name": "SCULPTURE"
+    },
+    "052": {
+        "Name": "APP/COMMERCIAL ART"
+    },
+    "054": {
+        "Name": "BUSINESS STUDIES"
+    },
+    "055": {
+        "Name": "ACCOUNTANCY"
+    },
+    "056": {
+        "Name": "KATHAK - DANCE"
+    },
+    "057": {
+        "Name": "BHARATNATYAM - DANCE"
+    },
+    "058": {
+        "Name": "KUCHIPUDI - DANCE"
+    },
+    "059": {
+        "Name": "ODISSI DANCE"
+    },
+    "060": {
+        "Name": "MANIPURI DANCE"
+    },
+    "061": {
+        "Name": "KATHAKALI - DANCE"
+    },
+    "064": {
+        "Name": "HOME SCIENCE"
+    },
+    "065": {
+        "Name": "INFORMATICS PRAC. (NEW)"
+    },
+    "066": {
+        "Name": "ENTREPRENEURSHIP"
+    },
+    "073": {
+        "Name": "KNOWLEDGE TRADITION & PRACTICES OF INDIA"
+    },
+    "074": {
+        "Name": "LEGAL STUDIES"
+    },
+    "076": {
+        "Name": "NATIONAL CADET CORPS (NCC)"
+    },
+    "083": {
+        "Name": "COMPUTER SCIENCE (NEW)"
+    },
+    "241": {
+        "Name": "APPLIED MATHEMATICS (NEW)"
+    },
+    "801": {
+        "Name": "RETAIL"
+    },
+    "802": {
+        "Name": "INFORMATION TECHNOLOGY"
+    },
+    "803": {
+        "Name": "WEB APPLICATION"
+    },
+    "804": {
+        "Name": "AUTOMOTIVE"
+    },
+    "805": {
+        "Name": "FINANCIAL MARKETS MANAGEMENT"
+    },
+    "806": {
+        "Name": "TOURISM"
+    },
+    "807": {
+        "Name": "BEAUTY & WELLNESS"
+    },
+    "808": {
+        "Name": "AGRICULTURE"
+    },
+    "809": {
+        "Name": "FOOD PRODUCTION"
+    },
+    "810": {
+        "Name": "FRONT OFFICE OPERATIONS"
+    },
+    "811": {
+        "Name": "BANKING"
+    },
+    "812": {
+        "Name": "MARKETING"
+    },
+    "813": {
+        "Name": "HEALTH CARE"
+    },
+    "814": {
+        "Name": "INSURANCE"
+    },
+    "815": {
+        "Name": "X-RAY TECHNICIAN"
+    },
+    "816": {
+        "Name": "HORTICULTURE"
+    },
+    "817": {
+        "Name": "TYPOGRAPHY & COMPUTER APPLICATION"
+    },
+    "818": {
+        "Name": "GEOSPATIAL TECHNOLOGY"
+    },
+    "819": {
+        "Name": "ELECTRICAL TECHNOLOGY"
+    },
+    "820": {
+        "Name": "ELECTRONIC TECHNOLOGY"
+    },
+    "821": {
+        "Name": "MEDIA"
+    },
+    "822": {
+        "Name": "TAXATION"
+    },
+    "823": {
+        "Name": "COST ACCOUNTING"
+    },
+    "824": {
+        "Name": "OFFICE PROCEDURES & PRACTICES"
+    },
+    "825": {
+        "Name": "SHORTHAND (ENGLISH)"
+    },
+    "826": {
+        "Name": "SHORTHAND (HINDI)"
+    },
+    "827": {
+        "Name": "AIR-CONDITIONING & REFRIGERATION"
+    },
+    "828": {
+        "Name": "MEDICAL DIAGNOSTICS"
+    },
+    "829": {
+        "Name": "TEXTILE DESIGN"
+    },
+    "830": {
+        "Name": "DESIGN"
+    },
+    "831": {
+        "Name": "SALESMANSHIP"
+    },
+    "833": {
+        "Name": "BUSINESS ADMINISTRATION"
+    },
+    "834": {
+        "Name": "FOOD NUTRITION & DIETETICS"
+    },
+    "835": {
+        "Name": "MASS MEDIA STUDIES"
+    },
+    "836": {
+        "Name": "LIBRARY & INFORMATION SCIENCE"
+    },
+    "837": {
+        "Name": "FASHION STUDIES"
+    },
+    "841": {
+        "Name": "YOGA"
+    },
+    "842": {
+        "Name": "EARLY CHILDHOOD CARE EDUCATION (NEW)"
+    },
+    "843": {
+        "Name": "ARTIFICIAL INTELLIGENCE"
+    },
+    "844": {
+        "Name": "DATA SCIENCE (NEW)"
+    },
+    "001": {
+        "Name": "ENGLISH ELECTIVE"
+    },
+    "002": {
+        "Name": "HINDI ELECTIVE"
+    },
+    "003": {
+        "Name": "URDU ELECTIVE"
+    },
+    "022": {
+        "Name": "SANSKRIT ELECTIVE"
+    },
+    "104": {
+        "Name": "PUNJABI"
+    },
+    "105": {
+        "Name": "BENGALI"
+    },
+    "106": {
+        "Name": "TAMIL"
+    },
+    "107": {
+        "Name": "TELUGU"
+    },
+    "108": {
+        "Name": "SINDHI"
+    },
+    "109": {
+        "Name": "MARATHI"
+    },
+    "110": {
+        "Name": "GUJARATI"
+    },
+    "111": {
+        "Name": "MANIPURI"
+    },
+    "112": {
+        "Name": "MALAYALAM"
+    },
+    "113": {
+        "Name": "ODIA"
+    },
+    "114": {
+        "Name": "ASSAMESE"
+    },
+    "115": {
+        "Name": "KANNADA"
+    },
+    "116": {
+        "Name": "ARABIC"
+    },
+    "117": {
+        "Name": "TIBETAN"
+    },
+    "118": {
+        "Name": "FRENCH"
+    },
+    "120": {
+        "Name": "GERMAN"
+    },
+    "121": {
+        "Name": "RUSSIAN"
+    },
+    "123": {
+        "Name": "PERSIAN"
+    },
+    "124": {
+        "Name": "NEPALI"
+    },
+    "125": {
+        "Name": "LIMBOO"
+    },
+    "126": {
+        "Name": "LEPCHA"
+    },
+    "189": {
+        "Name": "TELUGU TELANGANA"
+    },
+    "191": {
+        "Name": "KOKBOROK"
+    },
+    "192": {
+        "Name": "BODO"
+    },
+    "193": {
+        "Name": "TANGKHUL"
+    },
+    "194": {
+        "Name": "JAPANESE"
+    },
+    "195": {
+        "Name": "BHUTIA"
+    },
+    "196": {
+        "Name": "SPANISH"
+    },
+    "197": {
+        "Name": "KASHMIRI"
+    },
+    "198": {
+        "Name": "MIZO"
+    },
+    "301": {
+        "Name": "ENGLISH CORE"
+    },
+    "302": {
+        "Name": "HINDI CORE"
+    },
+    "303": {
+        "Name": "URDU CORE"
+    },
+    "322": {
+        "Name": "SANSKRIT CORE"
+    }
+}
