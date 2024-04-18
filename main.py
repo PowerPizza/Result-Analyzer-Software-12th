@@ -38,7 +38,8 @@ def extract_first_line(line_):
         "roll_no": None,
         "name": "",
         "subject_codes": [],
-        "result": ""
+        "result": "",
+        "comp_subjects": []
     }
     # extracting roll number.
     line_chunks = list_formatter(line_.split(" "))
@@ -47,6 +48,8 @@ def extract_first_line(line_):
     # extracting name and subject code format
     name_done = False
     for xo in range(1, len(line_chunks)):
+        if line_chunks[xo] == "COMP":
+            break
         if line_chunks[xo].replace(" ", "").isnumeric():
             to_ret["subject_codes"].append(line_chunks[xo])
             name_done = True  # it's obvious by valid data format that if subject code is there so name should have been done.
@@ -65,6 +68,12 @@ def extract_first_line(line_):
 
     # extracting result pass or fail
     to_ret["result"] = line_chunks[-1]
+
+    if "COMP" in line_chunks:
+        to_ret["result"] = "COMP"
+        comp_subjs = line_chunks[line_chunks.index("COMP")+1: ]
+        for itm in comp_subjs:
+            to_ret["comp_subjects"].append(f"{subject_by_code[itm]['Name']} ({itm})")
 
     return to_ret
 
@@ -149,9 +158,10 @@ def on_export_data():
             subject_wise_columns[itm] = {"column_idx": cell_to_edit.col_idx}
             h1 += 2
 
-        top_back_cols = ["Max Marks", "Marks Obtain", "Best (5)\n(Best4 + English)" ,"Percentage all", "Average all", "Result"]
+        top_back_cols = ["Max Marks", "Marks Obtain", "Best (5)\n(Best4 + English)" ,"Percentage all", "Average all", "Result", "Compartment"]
         cols_best_sub = ["Max Marks", "Marks Obtain", "Percentage", "Average"]
 
+        result_column_index = None
         col_indexer = len(list(ws.iter_rows(0, 1))[0])+1
         for itm2 in top_back_cols:
             if itm2 == top_back_cols[2]:
@@ -163,8 +173,10 @@ def on_export_data():
                     ws.cell(2, col_indexer).value = itm3
                     col_indexer += 1
             else:
-                ws.cell(1, col_indexer).value = itm2
                 col_indexer += 1
+                ws.cell(1, col_indexer).value = itm2
+                if itm2 == "Result":
+                    result_column_index = ws.cell(1, col_indexer).column
         # ----------------------------- END -------------------------------
 
 
@@ -173,14 +185,13 @@ def on_export_data():
         row_indexer = 0
         for info in all_processed_data:  # adds data student wise
             row_indexer += 1
-
             ws.cell(starting_row, 1, info["roll_no"])
             ws.cell(starting_row, 2, info["student_name"])
             ws.cell(starting_row, 3, info["gender"])
 
             for sub_code in info["CMG"]:
                 mg_sub_col = subject_wise_columns[subject_by_code[sub_code]["Name"]]["column_idx"]
-                ws.cell(starting_row, mg_sub_col, info["CMG"][sub_code]["marks"])
+                ws.cell(starting_row, mg_sub_col, info["CMG"][sub_code]["marks"]).alignment = Alignment(horizontal="right")
                 ws.cell(starting_row, mg_sub_col+1, info["CMG"][sub_code]["grade"]).alignment = Alignment(horizontal="right")
 
             row_len = len(list(ws.iter_rows(starting_row, starting_row))[0]) - len(top_back_cols + cols_best_sub) + 1
@@ -191,21 +202,30 @@ def on_export_data():
             elif configs_["max_best_sub_range"] > len(info["subject_codes_format"]):
                 messagebox.showerror("out of range", "Max best subject range is out of range please enter valid values.")
                 return
-            marks_no_main_sub = info["marks"]
-            marks_no_main_sub.pop(info["subject_codes_format"].index(str(configs_["main_subject_code"])))
-            best_sub_total = [info["CMG"][str(configs_["main_subject_code"])]["marks"]] + sorted(marks_no_main_sub)[-(configs_["max_best_sub_range"]-1): ]
-            # best_sub_total - change index -4 to the n for which you want to take subjects n is the no. of subjects
 
-            mm_total = configs_["max_marks_1_subject"] * len(info["subject_codes_format"])
-            mm_best_sub = configs_["max_marks_1_subject"] * configs_["max_best_sub_range"]
+            if info["result"] != "ABST":
+                marks_no_main_sub = info["marks"]
+                marks_no_main_sub.pop(info["subject_codes_format"].index(str(configs_["main_subject_code"])))
+                best_sub_total = [info["CMG"][str(configs_["main_subject_code"])]["marks"]] + sorted(marks_no_main_sub)[-(configs_["max_best_sub_range"]-1): ]
+                # best_sub_total - change index -4 to the n for which you want to take subjects n is the no. of subjects
 
-            data_end_row = [mm_total, info["total_marks"], mm_best_sub, sum(best_sub_total) , "%.1f" % (sum(best_sub_total)/(configs_["max_marks_1_subject"]*configs_['max_best_sub_range'])*100),
-                            "%.1f" % (sum(best_sub_total) / configs_['max_best_sub_range']), "%.1f" % info["percentage"],
-                            "%.1f" % info["average"], info["result"]]  # data W.R.T top_back_cols.
-            for itm4 in data_end_row:
-                row_len += 1
-                ws.cell(starting_row, row_len, itm4)
+                mm_total = configs_["max_marks_1_subject"] * len(info["subject_codes_format"])
+                mm_best_sub = configs_["max_marks_1_subject"] * configs_["max_best_sub_range"]
 
+                data_end_row = [mm_total, info["total_marks"], mm_best_sub, sum(best_sub_total) , "%.1f" % (sum(best_sub_total)/(configs_["max_marks_1_subject"]*configs_['max_best_sub_range'])*100),
+                                "%.1f" % (sum(best_sub_total) / configs_['max_best_sub_range']), "%.1f" % info["percentage"],
+                                "%.1f" % info["average"], info["result"], ", ".join(info["comp_subjects"])]  # data W.R.T top_back_cols.
+                for itm4 in data_end_row:
+                    row_len += 1
+                    ws.cell(starting_row, row_len, itm4)
+
+            if info["result"] == "COMP":
+                for itm in ws[starting_row]:
+                    itm.fill = PatternFill(start_color="ffd000", end_color="ffd000", fill_type="solid")
+            elif info["result"] == "ABST":
+                ws.cell(starting_row, result_column_index, info["result"])
+                for itm in ws[starting_row]:
+                    itm.fill = PatternFill(start_color="ff866e", end_color="ff866e", fill_type="solid")
             starting_row += 1
 
         starting_row += 1
@@ -227,7 +247,7 @@ def on_export_data():
             sum_marks = 0
             no_of_students = 0 # no of student own the subject
             for nums in one_sub_total:
-                if nums.value:
+                if nums.value and str(nums.value).isnumeric():
                     sum_marks += int(nums.value)
                     no_of_students += 1
             if not no_of_students : no_of_students = 1
@@ -433,7 +453,7 @@ def on_click_about():
     percentage average etc. Sorted data can be exported as an Excel or JSON file.
     
     ------------------------------- Data format required --------------------------------
-    DATA_LINE1 :- ROLL_NO GENDER STUDENT_NAME SUB_CODE1 SUB_CODE2 SUB_CODE3......SUB_CODE(n) GRADE1 GRADE2 GRADE3 RESULT
+    DATA_LINE1 :- ROLL_NO GENDER STUDENT_NAME SUB_CODE1 SUB_CODE2 SUB_CODE3......SUB_CODE(n) GRADE1 GRADE2 GRADE3 RESULT COMPARTMENT_SUBJECT_CODES
     DATA_LINE2 :- SUB1_MARKS SUB1_GRADE SUB2_MARKS SUB2_GRADE ...... SUB(n)_MARKS SUB(n)_GRADE
     
     > how should be DATA_LINE1 ?
@@ -442,7 +462,7 @@ def on_click_about():
     3. NAME can contain white spaces.
     4. SUB_CODE1 to infinity works just remember that DATA_LINE2 should contain marks and grade of SUB_CODE(n) in proper format.
     5. (optional) GRADE1 GRADE2 GRADE3 not actually required software works same if its present of not.
-    6. RESULT it should be fail or pass and its required.
+    6. RESULT it should be FAIL or PASS or COMP or ABST and its required.
 
     > how should be DATA_LINE2
     1. SUB(n)_MARKS and SUB(n)_GRADE represents the marks and grade with respect to SUB_CODE(n).
@@ -511,7 +531,7 @@ def begin_status():
     l1 = 0
     while l1 < len(file_lines):
         if len(file_lines[l1].split(" ")[0]) >= 7 and file_lines[l1].split(" ")[0].isnumeric():  # STARTSWITH ROLL NO CHECK (data line 1)
-            if len(file_lines[l1 + 1].split(" ")[0]) == 3 and file_lines[l1 + 1].split(" ")[0].isnumeric():  # STARTSWITH SUBJECT CODE CHECK (data line 2)
+            if (len(file_lines[l1 + 1].split(" ")[0]) == 3 and file_lines[l1 + 1].split(" ")[0].isnumeric()) or (file_lines[l1].split(" ")[-1] == "ABST" and (len(file_lines[l1 + 1].split(" ")[0]) < 5)):  # STARTSWITH SUBJECT CODE CHECK (data line 2)
                 l1 += 2
             else:
                 messagebox.showwarning("unknown row", f"Data line 2 not found or garbage value exists between data lines\n Error At: {file_lines[l1]}")
@@ -526,7 +546,14 @@ def begin_status():
     i = 0
     def d_processor(proc_from=0, proc_to=len(file_lines)):
         for c1 in range(proc_from, proc_to, prv_next_step):
-            processed_data = {}
+            processed_data = {
+                "total_marks": "ABSENT",
+                "average": "ABSENT",
+                "percentage": "ABSENT",
+                "lowest": "ABSENT",
+                "highest": "ABSENT",
+                "comp_subjects": "ABSENT"
+            }
             data_no_spcs = file_lines[c1]
 
             data_stage_1 = extract_first_line(data_no_spcs)
@@ -543,24 +570,32 @@ def begin_status():
             processed_data["grades"] = []
 
             for k1 in range(len(data_no_spcs2) // 2):
-                processed_data["CMG"][data_stage_1["subject_codes"][k1]] = {"marks": int(data_no_spcs2[k1 * 2]),
-                                                                            "grade": data_no_spcs2[k1 * 2 + 1]}
-                processed_data["marks"].append(int(data_no_spcs2[k1 * 2]))
-                processed_data["grades"].append(data_no_spcs2[k1 * 2 + 1])
+                if data_stage_1["result"] == "ABST":
+                    processed_data["CMG"][data_stage_1["subject_codes"][k1]] = {"marks": data_no_spcs2[k1 * 2],
+                                                                                "grade": data_no_spcs2[k1 * 2 + 1]}
+                    processed_data["marks"].append(data_no_spcs2[k1 * 2])
+                    processed_data["grades"].append(data_no_spcs2[k1 * 2 + 1])
+                else:
+                    processed_data["CMG"][data_stage_1["subject_codes"][k1]] = {"marks": int(data_no_spcs2[k1 * 2]),
+                                                                                "grade": data_no_spcs2[k1 * 2 + 1]}
+                    processed_data["marks"].append(int(data_no_spcs2[k1 * 2]))
+                    processed_data["grades"].append(data_no_spcs2[k1 * 2 + 1])
 
-            processed_data["total_marks"] = sum(processed_data["marks"])
-            processed_data["average"] = processed_data["total_marks"] / len(processed_data["marks"])
-            processed_data["percentage"] = processed_data["total_marks"] / (configs_["max_marks_1_subject"] * len(processed_data["subject_codes_format"])) * 100
-
-            processed_data["lowest"] = min(processed_data["marks"])
-            processed_data["highest"] = max(processed_data["marks"])
             processed_data["result"] = data_stage_1["result"]
+
+            if data_stage_1["result"] != "ABST":
+                processed_data["total_marks"] = sum(processed_data["marks"])
+                processed_data["average"] = processed_data["total_marks"] / len(processed_data["marks"])
+                processed_data["percentage"] = processed_data["total_marks"] / (configs_["max_marks_1_subject"] * len(processed_data["subject_codes_format"])) * 100
+
+                processed_data["lowest"] = min(processed_data["marks"])
+                processed_data["highest"] = max(processed_data["marks"])
+                processed_data["comp_subjects"] = data_stage_1["comp_subjects"]
 
             yield processed_data
 
     def data_processor():
         data_line = list(d_processor(i, i+1))[0]
-        # print(data_line)
 
         set_roll_no.set(data_line["roll_no"])
         set_name.set(data_line["student_name"])
@@ -588,11 +623,12 @@ def begin_status():
             subject_by_code[sub_code_pattern[j]]["marks_var"].set(data_line["marks"][j])
             subject_by_code[sub_code_pattern[j]]["grade_var"].set(data_line["grades"][j])
 
-        set_total_marks.set(data_line["total_marks"])
-        set_percentage_marks.set("%.1f" % data_line["percentage"])
-        set_average_marks.set("%.1f" % data_line["average"])
-        set_lowest_marks.set(data_line["lowest"])
-        set_highest_marks.set(data_line["highest"])
+        if data_line["result"] != "ABST":
+            set_total_marks.set(data_line["total_marks"])
+            set_percentage_marks.set("%.1f" % data_line["percentage"])
+            set_average_marks.set("%.1f" % data_line["average"])
+            set_lowest_marks.set(data_line["lowest"])
+            set_highest_marks.set(data_line["highest"])
 
         lbl_page.config(text=f"Data Page : {i//2+1}")
 
