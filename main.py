@@ -3,21 +3,21 @@ Date - 02-08-2023
 Developer - scihack/powerpizza
 Purpose - to sort the txt unsorted data in a excel file.
 """
-
-
 import tkinter, json
 from tkinter import *
 from tkinter import filedialog, messagebox
 from string_helper_funcs import *
 from other_functions import *
-from openpyxl import workbook
+import openpyxl
 from openpyxl.styles import Alignment, PatternFill
 import webbrowser
+from pandas import DataFrame, to_numeric, ExcelWriter
+from pandas.io.formats import excel
 
 print("Starting . . . .")
 root = tkinter.Tk()
 root.geometry("900x600")
-root.title("Result Analyzer")
+root.title("Result Analyzer (For 12th)")
 root.state("zoomed")
 root.iconphoto(True, PhotoImage(file="software_icon.png", master=root))
 
@@ -29,54 +29,251 @@ configs_ = json.load(open("configs.json", "r"))
 file_lines = None
 all_processed_data = None
 status_area_frame = None
+excel.ExcelFormatter.header_style = None
+df_ = DataFrame([[0, 0, 0], [0, 0, 0]])
+unique_sub_codes = configs_["dominant_subjects"]
+logs_string = ""
+show_loading = False
 # --------------------- END -----------------------
 
 # ----------------- functions of DRY --------------
-def extract_first_line(line_):
-    # First line includes roll number, name, subject codes, grades, pass or fail
-    to_ret = {
-        "roll_no": None,
-        "name": "",
-        "subject_codes": [],
-        "result": "",
-        "comp_subjects": []
-    }
-    # extracting roll number.
-    line_chunks = list_formatter(line_.split(" "))
-    to_ret["roll_no"] = int(line_chunks[0])
+def add_log(message):
+    global logs_string
+    logs_string += message + "\n"
+    logs_opt.config(background="#FF0000", foreground="#FFFFFF")
+def filterDataLine1(line):
+    to_ret = {"roll_no": int(line[0]), "gender": None, "name": "", "subject_codes": [], "result": "",
+              "comp_subjects": []}
 
-    # extracting name and subject code format
+    # extracting gender, name and subject code format
     name_done = False
-    for xo in range(1, len(line_chunks)):
-        if line_chunks[xo] == "COMP":
+    for xo in range(1, len(line)):
+        if line[xo] == "COMP":
             break
-        if line_chunks[xo].replace(" ", "").isnumeric():
-            to_ret["subject_codes"].append(line_chunks[xo])
+
+        if line[xo] == 'M':
+            to_ret["gender"] = "MALE"
+
+        elif line[xo] == 'F':
+            to_ret["gender"] = "FEMALE"
+
+        elif line[xo].replace(" ", "").isnumeric():
+            to_ret["subject_codes"].append(line[xo])
             name_done = True  # it's obvious by valid data format that if subject code is there so name should have been done.
+
         else:
             if not name_done:
-                to_ret["name"] += " "+line_chunks[xo]
-
-    # extracting gender from name
-    gender_n_name = list_formatter(to_ret["name"].split(" "))
-    if "F" in gender_n_name[0]:
-        to_ret["gender"] = "Female"
-    elif "M" in gender_n_name[0]:
-        to_ret["gender"] = "Male"
-    gender_n_name.pop(0)
-    to_ret["name"] = " ".join(gender_n_name)
+                to_ret["name"] += " " + line[xo]
+    to_ret["name"] = rm_extra_spaces(to_ret['name'])
 
     # extracting result pass or fail
-    to_ret["result"] = line_chunks[-1]
+    to_ret["result"] = line[-1]
 
-    if "COMP" in line_chunks:
+    if "COMP" in line:
         to_ret["result"] = "COMP"
-        comp_subjs = line_chunks[line_chunks.index("COMP")+1: ]
+        comp_subjs = line[line.index("COMP") + 1:]
         for itm in comp_subjs:
             to_ret["comp_subjects"].append(f"{subject_by_code[itm]['Name']} ({itm})")
 
     return to_ret
 
+
+def dataLineExtractor(data_file):
+    """
+    main motive of this function is to extract the datalines (DATA_LINE1 and DATA_LINE2) but it also
+    calculates some values like (overall marks and their totals, best5 marks and their totals).
+    """
+    dataLinePairs = []
+    data_line1_found = False
+    data_line1 = []
+    for line in data_file.readlines():
+        line = list_formatter(str(rm_extra_spaces(line.replace("\n", ""))).split(" "))
+        if len(line):
+            if len(line[0]) in range(6, 11) and line[0].isnumeric():
+                if len(data_line1):
+                    add_log(f"⚠ Data line 2 not found for `{data_line1}` Due to which entry will be ignored.")
+                    # messagebox.showwarning("Missing DATA_LINE 2", f"Data line 2 not found for {data_line1}\nDue to which entry will be ignored.")
+                    # print("Data line 2 not found for : ", data_line1)
+                data_line1 = line
+                data_line1_found = True
+            elif (len(line[0]) == 3 and line[0].isnumeric()) or ("ABST" in data_line1):
+                if data_line1_found:
+                    filtered_line1 = filterDataLine1(data_line1)
+                    to_append_ = {"LINE1": data_line1, "LINE2": line, "SubCode_MG": {},
+                                  "overall_max_marks": configs_["max_marks_1_subject"]*len(filtered_line1["subject_codes"]),
+                                  "best5_max_marks": configs_["max_best_sub_range"]*configs_["max_marks_1_subject"],
+                                  "best5_total": 0, "overall_total": 0}
+
+                    idxr = 0
+                    marks_list = []
+                    for code_ in filtered_line1["subject_codes"]:
+                        to_append_["SubCode_MG"][code_] = [line[idxr], line[idxr+1]]
+                        if line[idxr].isnumeric():
+                            to_append_["overall_total"] += int(line[idxr])
+                            if code_ != configs_["main_subject_code"]:
+                                marks_list.append(int(line[idxr]))
+                        idxr += 2
+                    if len(marks_list):
+                        to_append_["best5_total"] = sum(sorted(marks_list, reverse=True)[:configs_["max_best_sub_range"]-1]) + int(to_append_["SubCode_MG"][configs_["main_subject_code"]][0])
+
+                    dataLinePairs.append(to_append_)
+                    data_line1_found = False
+                    data_line1 = []
+                else:
+                    # messagebox.showwarning("Missing DATA_LINE 1", f"Data line 1 not found for {line}\nDue to which entry will be ignored.")
+                    add_log(f"⚠ Data line 1 not found for `{line}` Due to which entry will be ignored.")
+
+                    # print("data line 1 not found for ", line)
+                # messagebox.showwarning("Invalid data line", f"Invalid dataline found it may have missing its pair.\n{line}")
+
+    # print(dataLinePairs)
+    initDataFrame(dataLinePairs)
+    # print(df_)
+    begin_status(data_file.name)
+    # DataFrame Creation
+
+def initDataFrame(dataLinePairs):
+    global df_, unique_sub_codes
+    for pair in dataLinePairs:
+        filtered_line = filterDataLine1(pair["LINE1"])
+        for sub_code in filtered_line["subject_codes"]:
+            if sub_code not in unique_sub_codes:
+                unique_sub_codes.append(sub_code)
+    columns_ = []
+    list(map(lambda sub_code: columns_.extend([f"MARKS", f"GRADES"]), unique_sub_codes))
+    df_ = DataFrame(
+        columns=["roll_no", "student_name", "gender"] + columns_ + ["Max Marks OA", "Total OA", "Percentage OA", "Average OA"] + ["Max Marks B5", "Total B5", "Percentage B5",
+                                                                                                         "Average B5"] + [
+                    "result", "compartment"])
+
+    for itm in dataLinePairs:
+        filtered_r1 = filterDataLine1(itm["LINE1"])
+        MG_in_pattern = []
+        for code_ in unique_sub_codes:
+            if code_ in itm["SubCode_MG"]:
+                MG_in_pattern.extend(itm["SubCode_MG"][code_])
+            else:
+                MG_in_pattern.extend(["", ""])
+
+        percentage_overall = "%.2f" % (itm["overall_total"] / itm["overall_max_marks"] * 100)
+        percentage_best5 = "%.2f" % (itm["best5_total"] / itm["best5_max_marks"] * 100)
+        average_overall = "%0.2f" % (itm["overall_total"] / len(itm["SubCode_MG"]))
+        average_best5 = "%0.2f" % (itm["best5_total"] / configs_["max_best_sub_range"])
+        df_.loc[df_.index.size] = [filtered_r1["roll_no"], filtered_r1["name"],
+                                   filtered_r1["gender"]] + MG_in_pattern + [itm["overall_max_marks"],
+                                                                             itm["overall_total"], percentage_overall,
+                                                                             average_overall,
+                                                                             itm["best5_max_marks"], itm["best5_total"],
+                                                                             percentage_best5, average_best5,
+                                                                             filtered_r1["result"],
+                                                                             ", ".join(filtered_r1["comp_subjects"])]
+
+def writeToExcel():
+    export_file = filedialog.asksaveasfile(filetypes=(("Excel file", "*.xlsx"), ("All files", "*.*")), defaultextension=".xlsx")
+    if not export_file:
+        return
+
+    columns_ = []
+    list(map(lambda sub_code: columns_.extend([f"MARKS", f"GRADES"]), unique_sub_codes))
+    merged_column_excel_format = ["", "", ""] + columns_ + (["Max Marks", "Total", "Percentage", "Average"]*2) + ["", ""]
+
+    # -------------- CREATING OVER ALL SHEET ----------
+    df_over_all = DataFrame(df_)
+    df_over_all["MARKS"] = df_over_all["MARKS"].replace(['', ' '], None)
+    df_over_all["MARKS"] = df_over_all["MARKS"].apply(lambda row_: to_numeric(row_, errors='coerce'))  # changed datatype of all MARKS columns to integer
+    sub_total = df_over_all["MARKS"].sum()
+    all_avg = df_over_all["MARKS"].sum() / (len(df_over_all["MARKS"].index) - df_over_all["MARKS"].isna().sum())
+    df_over_all.loc["SUB_TOTAL", "MARKS"] = sub_total
+    df_over_all.loc["ALL_AVERAGE", "MARKS"] = all_avg.__round__(2)
+    excel_writer = ExcelWriter(export_file.name)
+    df_over_all.columns = merged_column_excel_format
+    df_over_all.to_excel(excel_writer, index=False, sheet_name="OverAll Result")
+
+    # -------------- EXTRACTING TOP 10 STUDENTS IN A NEW SHEET -------
+    df_top_10 = DataFrame(df_)
+    df_top_10 = df_top_10.sort_values("Total B5", ascending=False).iloc[0:10]
+    df_top_10.columns = merged_column_excel_format
+    df_top_10.to_excel(excel_writer, index=False, sheet_name="Top 10")
+
+    # ------------- CREATING SHEET OF EACH SINGLE SUBJECT ------------
+    df_over_all = DataFrame(df_)
+    df_over_all.columns = list(range(0, len(df_over_all.columns)))
+    df_col_idxr = 3
+    for uni_subcode in unique_sub_codes:
+        df_single = DataFrame(df_over_all[[0, 1, 2, df_col_idxr, df_col_idxr+1]])
+        df_single.loc[:, df_col_idxr] = to_numeric(df_single[df_col_idxr], errors='coerce')
+        avg_marks = df_single[df_col_idxr].sum()
+        if avg_marks != 0:
+            avg_marks = "%0.2f" % (avg_marks / (len(df_single.index)-df_single[df_col_idxr].isna().sum()))  # .isna().sum() counts NaN values
+        df_single.columns = ["Roll No.", "Name", "Gender", "Marks Obtained", "Grade"]
+        df_single['Grade'] = df_single['Grade'].replace(['', ' '], None)
+        df_single = df_single.dropna(subset=['Marks Obtained', 'Grade'], how='all')
+        df_single = df_single.sort_values("Marks Obtained", ascending=False)
+        df_single.insert(0, "S. no.", "")
+        df_single['S. no.'] = range(1, len(df_single.index)+1)
+        df_single.loc["average", ['Marks Obtained']] = f"AVG : {avg_marks}"
+        df_single.to_excel(excel_writer, sheet_name=subject_by_code[uni_subcode]["Name"], index=False)
+        df_col_idxr += 2
+
+    # --------- ADDING HEADER WITH MERGED CELLS IN EXCEL FILE -----------
+    excel_writer.close()  # necessary!! since I am not using with block.
+    wb = openpyxl.load_workbook(export_file.name)
+
+    def createOverAllSheetLayout(sheet_name):
+        ws_ = wb[sheet_name]
+
+        ws_.insert_rows(1, amount=1)
+        row_pointer = 1
+
+        table_header = [
+            ["Roll no", 0],
+            ["Student Name", 0],
+            ["Gender", 0],
+        ]
+        table_header += map(lambda sub_name: [sub_name, 2], subcode_to_subname(list(unique_sub_codes)))
+        table_header += [
+            ["Over All", 4],
+            [f"Best(5)(Best 4 + {subject_by_code[configs_['main_subject_code']]['Name']})", 4],
+            ["Result", 0],
+            ["Compartment", 0]
+        ]
+
+        merge_step = 0
+        for i in range(len(table_header)):
+            cell_ = ws_.cell(row=row_pointer, column=i + merge_step + 1, value=table_header[i][0])
+            cell_.alignment = Alignment(horizontal="center")
+            if table_header[i][1]:
+                ws_.merge_cells(start_row=row_pointer, end_row=row_pointer, start_column=cell_.col_idx,
+                               end_column=cell_.col_idx + table_header[i][1] - 1)
+                merge_step += table_header[i][1] - 1
+    createOverAllSheetLayout("OverAll Result")
+    createOverAllSheetLayout("Top 10")
+
+
+    # COLOURING COLUMNS OF ABST AND COMP
+    ws = wb["OverAll Result"]
+
+    header_cols = ws.iter_cols(max_row=1, min_row=1, min_col=1)
+    for head_col in header_cols:
+        if str(head_col[0].value).lower() == "result":
+            result_rows = ws.iter_rows(min_row=3, min_col=head_col[0].col_idx, max_col=head_col[0].col_idx)
+            for result_ in result_rows:
+                if str(result_[0].value) == "ABST":
+                    to_color = ws.iter_cols(max_row=result_[0].row, min_row=result_[0].row, min_col=1)
+                    for itm3 in to_color:
+                        itm3[0].fill = PatternFill(start_color="ff7b63", end_color="ff7b63", fill_type="solid")
+                elif str(result_[0].value) == "COMP":
+                    to_color = ws.iter_cols(max_row=result_[0].row, min_row=result_[0].row, min_col=1)
+                    for itm3 in to_color:
+                        itm3[0].fill = PatternFill(start_color="ffe945", end_color="ffe945", fill_type="solid")
+            break
+
+    ws.merge_cells(start_row=len(df_.index)+3,end_row=len(df_.index)+3, start_column=1, end_column=3)
+    ws.cell(row=len(df_.index)+3, column=1, value=f"Total Student : {len(df_.index)}").fill = PatternFill(fill_type="solid", start_color="ffc187", end_color="ffc187")
+    ws.merge_cells(start_row=len(df_.index)+4,end_row=len(df_.index)+4, start_column=1, end_column=3)
+    ws.cell(row=len(df_.index)+4, column=1, value=f"Subject Average(s)").fill = PatternFill(fill_type="solid", start_color="9bff87", end_color="9bff87")
+    wb.save(export_file.name)
+    messagebox.showinfo("Done", "File export successful!")
 
 def subcode_to_subname(code_list):
     to_ret = []
@@ -89,179 +286,35 @@ def subcode_to_subname(code_list):
 header_canva = Canvas(root, bg="#FFFFFF", highlightthickness=2, highlightbackground="#000000")
 def on_add_data_file():
     global selected_file, status_area_frame
-    if status_area_frame:
-        status_area_frame = status_area_frame.destroy()
 
+    add_data_file_opt.config(text="Importing...", state="disabled")
+    root.config(cursor='watch')
+    root.update()
     selected_file = filedialog.askopenfile("r", filetypes=[("text files", "*.txt")])
     if selected_file:
+        if status_area_frame:
+            status_area_frame = status_area_frame.destroy()
         try:
-            status_area_frame = begin_status()
+            dataLineExtractor(selected_file)
         except BaseException as e:
             messagebox.showerror("Invalid File", f"File format is invalid please provide a valid file.\nerror : {e}")
+    add_data_file_opt.config(text="Add Data File", state="normal")
+    root.config(cursor='arrow')
 
 add_data_file_opt = Button(header_canva, text="Add Data File", font=("Helvetica", 12), command=on_add_data_file)
 add_data_file_opt.pack(padx=2, pady=2, side=LEFT)
 
+def on_click_export():
+    export_data_file_opt.config(text="Exporting...", state="disabled")
+    root.config(cursor='watch')
+    try:
+        writeToExcel()
+    except BaseException as e:
+        messagebox.showerror("Failed", f"Error in exporting excel file...\nError : {e}")
+    export_data_file_opt.config(text="Export Data File", state="normal")
+    root.config(cursor='arrow')
 
-def on_export_data():
-    if not selected_file:
-        messagebox.showerror("Failed", "Please import some data first.")
-        return
-
-    export_file = filedialog.asksaveasfile(filetypes=(("Excel file", "*.xlsx"), ("JSON files", "*.json"), ("All files", "*.*")), defaultextension=".xlsx")
-    if not export_file:
-        return
-
-    if export_file and export_file.name.endswith(".json"):
-        to_write = {}
-        idx = 0
-        for itm in all_processed_data:
-            idx += 1
-            to_write[f"Student_{idx}"] = itm
-        json.dump(to_write, export_file)
-        export_file.close()
-        # print(export_file.name)
-
-    elif export_file and export_file.name.endswith(".xlsx"):
-        dominant_subjects = configs_["dominant_subjects"]
-        available_sub_code = {}
-        for datas_ in all_processed_data:
-            available_sub_code = set(list(available_sub_code) + datas_["subject_codes_format"])
-
-        for sub_code in available_sub_code:  # dominant subjects first then left subjects like first science then commerence etc.. at last some subjects like germany language etc.
-            if sub_code not in dominant_subjects:
-                dominant_subjects.append(sub_code)
-
-        for sub_code2 in dominant_subjects.copy():  # removing all the dominant subjects which do not exist in any student's result generally physiology
-            if sub_code2 not in available_sub_code:
-                dominant_subjects.remove(sub_code2)
-        available_sub_code = dominant_subjects
-
-        available_sub_name = subcode_to_subname(available_sub_code)
-
-        wb = workbook.Workbook()
-        ws = wb.active
-        subject_wise_columns = {}
-
-        # ------------------ EXCEL DATASHEET FORMAT MAKING ------------------
-        top_front_cols = ["Roll No.", "Student Name", "Gender", ""]
-        ws.append(top_front_cols)
-
-        h1 = 0
-        for itm in available_sub_name:  # top middle cols
-            ws.merge_cells(start_row=1, end_row=1, start_column=len(top_front_cols)+h1, end_column=len(top_front_cols)+h1+1)
-            cell_to_edit = ws.cell(row=1, column=h1 + len(top_front_cols))
-            cell_to_edit.value = itm
-            cell_to_edit.alignment = Alignment(horizontal="center")
-            ws.cell(row=2, column=cell_to_edit.col_idx, value="Marks")
-            ws.cell(row=2, column=cell_to_edit.col_idx + 1, value="Grade")
-            subject_wise_columns[itm] = {"column_idx": cell_to_edit.col_idx}
-            h1 += 2
-
-        top_back_cols = ["Max Marks", "Marks Obtain", "Best (5)\n(Best4 + English)" ,"Percentage all", "Average all", "Result", "Compartment"]
-        cols_best_sub = ["Max Marks", "Marks Obtain", "Percentage", "Average"]
-
-        result_column_index = None
-        col_indexer = len(list(ws.iter_rows(0, 1))[0])+1
-        for itm2 in top_back_cols:
-            if itm2 == top_back_cols[2]:
-                ws.merge_cells(start_row=1, end_row=1, start_column=col_indexer, end_column=col_indexer+3)
-                ws.cell(1, col_indexer).value = itm2
-                ws.cell(1, col_indexer).alignment = Alignment("center")
-
-                for itm3 in cols_best_sub:
-                    ws.cell(2, col_indexer).value = itm3
-                    col_indexer += 1
-            else:
-                col_indexer += 1
-                ws.cell(1, col_indexer).value = itm2
-                if itm2 == "Result":
-                    result_column_index = ws.cell(1, col_indexer).column
-        # ----------------------------- END -------------------------------
-
-
-        # ------------------------ DATA WRITING ----------------------------
-        starting_row = 3
-        row_indexer = 0
-        for info in all_processed_data:  # adds data student wise
-            row_indexer += 1
-            ws.cell(starting_row, 1, info["roll_no"])
-            ws.cell(starting_row, 2, info["student_name"])
-            ws.cell(starting_row, 3, info["gender"])
-
-            for sub_code in info["CMG"]:
-                mg_sub_col = subject_wise_columns[subject_by_code[sub_code]["Name"]]["column_idx"]
-                ws.cell(starting_row, mg_sub_col, info["CMG"][sub_code]["marks"]).alignment = Alignment(horizontal="right")
-                ws.cell(starting_row, mg_sub_col+1, info["CMG"][sub_code]["grade"]).alignment = Alignment(horizontal="right")
-
-            row_len = len(list(ws.iter_rows(starting_row, starting_row))[0]) - len(top_back_cols + cols_best_sub) + 1
-
-            if configs_["main_subject_code"] not in info["subject_codes_format"]:
-                messagebox.showerror("Invalid Main Subject Code", f"Main subject is not present in entry {row_len}\nPlease provide a main subject code which is common in all entries.")
-                return
-            elif configs_["max_best_sub_range"] > len(info["subject_codes_format"]):
-                messagebox.showerror("out of range", "Max best subject range is out of range please enter valid values.")
-                return
-
-            if info["result"] != "ABST":
-                marks_no_main_sub = info["marks"]
-                marks_no_main_sub.pop(info["subject_codes_format"].index(str(configs_["main_subject_code"])))
-                best_sub_total = [info["CMG"][str(configs_["main_subject_code"])]["marks"]] + sorted(marks_no_main_sub)[-(configs_["max_best_sub_range"]-1): ]
-                # best_sub_total - change index -4 to the n for which you want to take subjects n is the no. of subjects
-
-                mm_total = configs_["max_marks_1_subject"] * len(info["subject_codes_format"])
-                mm_best_sub = configs_["max_marks_1_subject"] * configs_["max_best_sub_range"]
-
-                data_end_row = [mm_total, info["total_marks"], mm_best_sub, sum(best_sub_total) , "%.1f" % (sum(best_sub_total)/(configs_["max_marks_1_subject"]*configs_['max_best_sub_range'])*100),
-                                "%.1f" % (sum(best_sub_total) / configs_['max_best_sub_range']), "%.1f" % info["percentage"],
-                                "%.1f" % info["average"], info["result"], ", ".join(info["comp_subjects"])]  # data W.R.T top_back_cols.
-                for itm4 in data_end_row:
-                    row_len += 1
-                    ws.cell(starting_row, row_len, itm4)
-
-            if info["result"] == "COMP":
-                for itm in ws[starting_row]:
-                    itm.fill = PatternFill(start_color="ffd000", end_color="ffd000", fill_type="solid")
-            elif info["result"] == "ABST":
-                ws.cell(starting_row, result_column_index, info["result"])
-                for itm in ws[starting_row]:
-                    itm.fill = PatternFill(start_color="ff866e", end_color="ff866e", fill_type="solid")
-            starting_row += 1
-
-        starting_row += 1
-        ws.merge_cells(start_row=starting_row, end_row=starting_row, start_column=1, end_column=3)
-        cell_total_std = ws.cell(starting_row, 1, f"Total Student : {len(all_processed_data)}")
-        cell_total_std.fill = PatternFill(start_color="FFFF00", end_color="CDFFBD", fill_type="solid")
-
-        starting_row += 1
-        ws.merge_cells(start_row=starting_row, end_row=starting_row, start_column=1, end_column=3)
-        cell_sub_total = ws.cell(starting_row, 1, f"Subject Total(s)")
-        cell_sub_total.fill = PatternFill(start_color="FFFF00", end_color="CDFFBD", fill_type="solid")
-
-        ws.merge_cells(start_row=starting_row+1, end_row=starting_row+1, start_column=1, end_column=3)
-        cell_sub_avg = ws.cell(starting_row, 1, f"Subject Average(s)")
-        cell_sub_avg.fill = PatternFill(start_color="FFFF00", end_color="CDFFBD", fill_type="solid")
-
-        for sub_idx in subject_wise_columns:
-            one_sub_total = list(ws.iter_cols(subject_wise_columns[sub_idx]["column_idx"], subject_wise_columns[sub_idx]["column_idx"], 3))[0] # starting reading marks from row 2 to end.
-            sum_marks = 0
-            no_of_students = 0 # no of student own the subject
-            for nums in one_sub_total:
-                if nums.value and str(nums.value).isnumeric():
-                    sum_marks += int(nums.value)
-                    no_of_students += 1
-            if not no_of_students : no_of_students = 1
-
-            ws.cell(starting_row-1, subject_wise_columns[sub_idx]["column_idx"], sum_marks)
-            ws.cell(starting_row, subject_wise_columns[sub_idx]["column_idx"], '%.1f' % (sum_marks/no_of_students))
-        # ----------------------- END ---------------------------------
-        wb.save(export_file.name)
-
-
-    messagebox.showinfo("Successful", "File saved.")
-
-
-export_data_file_opt = Button(header_canva, text="Export Data File", font=("Helvetica", 12), command=on_export_data)
+export_data_file_opt = Button(header_canva, text="Export Data File", font=("Helvetica", 12), command=on_click_export)
 export_data_file_opt.pack(padx=2, pady=2, side=LEFT)
 
 def on_configs():
@@ -443,6 +496,42 @@ configs_opt = Button(header_canva, text="Config", font=("Helvetica", 12), comman
 configs_opt.pack(padx=2, pady=2, side=LEFT)
 
 
+def on_click_logs():
+    global logs_string
+    logs_opt.config(state="disabled")
+    logs_opt.config(background="#d9d9d9", foreground="#000000")
+    log_canvas = Canvas(content_left_canva, bg="#FFFFFF", highlightthickness=2, highlightbackground="#000000")
+
+    fr_close_btn = Frame(log_canvas, bg="#FFFFFF")
+    lbl_logs = Label(fr_close_btn, text="LOGS", font=("Helvetica", 16, "bold", "italic"), background="#FFFFFF")
+    lbl_logs.pack(side=LEFT, padx=5)
+    def onClickCloseLogs():
+        log_canvas.destroy()
+        logs_opt.config(state="normal")
+
+    close_btn = Button(fr_close_btn, text="Close", foreground="#FFFFFF", background="#db2518", command=onClickCloseLogs)
+    close_btn.pack(side=RIGHT, padx=1)
+    def onClearLogs():
+        global logs_string
+        logs_string = ""
+        onClickCloseLogs()
+        on_click_logs()
+        messagebox.showinfo("Cleared", "Logs have been cleared.")
+    clearLog_btn = Button(fr_close_btn, text="Clear", foreground="#FFFFFF", background="#0000FF", command=onClearLogs)
+    clearLog_btn.pack(side=RIGHT, padx=1)
+    fr_close_btn.pack(fill=X, padx=3, pady=3)
+
+    text_ar = Text(log_canvas, highlightthickness=1, highlightcolor="#000000", bg="#FFFFFF", fg="#000000", font=("Arial", 12))
+    text_ar.insert(END, logs_string)
+    text_ar.config(state="disabled")
+    text_ar.focus()
+    text_ar.pack(fill=BOTH, padx=3, expand=True, pady=3)
+
+    log_canvas.place(x=0, y=0, relwidth=1.0, relheight=1.0)
+
+logs_opt = Button(header_canva, text="Logs", font=("Helvetica", 12), command=on_click_logs)
+logs_opt.pack(padx=2, pady=2, side=LEFT)
+
 def on_click_about():
     about_opt.config(state="disabled")
 
@@ -457,7 +546,7 @@ def on_click_about():
     DATA_LINE2 :- SUB1_MARKS SUB1_GRADE SUB2_MARKS SUB2_GRADE ...... SUB(n)_MARKS SUB(n)_GRADE
     
     > how should be DATA_LINE1 ?
-    1. ROLL_NO must be of 7 digits only.
+    1. ROLL_NO should be in range of 6 to 10 digits.
     2. Gender M for male, F for female
     3. NAME can contain white spaces.
     4. SUB_CODE1 to infinity works just remember that DATA_LINE2 should contain marks and grade of SUB_CODE(n) in proper format.
@@ -511,7 +600,6 @@ def on_click_about():
 
     about_canva.place(x=0, y=0, relwidth=1.0, relheight=1.0)
 
-
 about_opt = Button(header_canva, text="About", font=("Helvetica", 12), command=on_click_about)
 about_opt.pack(padx=2, pady=2, side=LEFT)
 
@@ -521,120 +609,72 @@ header_canva.pack(fill=X, ipadx=2, ipady=2, padx=2, pady=1)
 
 content_left_canva = Canvas(root, bg="#FFFFFF", highlightthickness=2, highlightbackground="#000000")
 
-def begin_status():
-    global file_lines, all_processed_data
-    file_lines = list(map(lambda data_: rm_extra_spaces(data_.replace("\n", "")), selected_file.readlines()))
-    for line in file_lines.copy():
-        if len(line) < 3:
-            file_lines.remove(line)
+def begin_status(selected_file_name):
+    global status_area_frame
 
-    l1 = 0
-    while l1 < len(file_lines):
-        if len(file_lines[l1].split(" ")[0]) >= 7 and file_lines[l1].split(" ")[0].isnumeric():  # STARTSWITH ROLL NO CHECK (data line 1)
-            if (len(file_lines[l1 + 1].split(" ")[0]) == 3 and file_lines[l1 + 1].split(" ")[0].isnumeric()) or (file_lines[l1].split(" ")[-1] == "ABST" and (len(file_lines[l1 + 1].split(" ")[0]) < 5)):  # STARTSWITH SUBJECT CODE CHECK (data line 2)
-                l1 += 2
-            else:
-                messagebox.showwarning("unknown row", f"Data line 2 not found or garbage value exists between data lines\n Error At: {file_lines[l1]}")
-                file_lines.pop(l1)
-        else:
-            file_lines.pop(l1)
+    search_by_val = StringVar(value="Roll No.")
+    search_for_val = StringVar()
+    page_indexer = 0
 
     frame_status_area = Frame(content_left_canva, bg="#FFFFFF")
-    lbl_file_name = Label(frame_status_area, text=f"File {selected_file.name}", bg="#FFFFFF", font=("Arial", 14))
+    status_area_frame = frame_status_area
+
+    lbl_file_name = Label(frame_status_area, text=f"File {selected_file_name}", bg="#FFFFFF", font=("Arial", 14))
     lbl_file_name.pack()
 
-    i = 0
-    def d_processor(proc_from=0, proc_to=len(file_lines)):
-        for c1 in range(proc_from, proc_to, prv_next_step):
-            processed_data = {
-                "total_marks": "ABSENT",
-                "average": "ABSENT",
-                "percentage": "ABSENT",
-                "lowest": "ABSENT",
-                "highest": "ABSENT",
-                "comp_subjects": "ABSENT"
-            }
-            data_no_spcs = file_lines[c1]
-
-            data_stage_1 = extract_first_line(data_no_spcs)
-
-            data_no_spcs2 = rm_extra_spaces(file_lines[c1 + 1]).replace("\n", "").split(" ")
-            data_no_spcs2 = list_formatter(data_no_spcs2)
-
-            processed_data["student_name"] = data_stage_1["name"]
-            processed_data["gender"] = data_stage_1["gender"]
-            processed_data["roll_no"] = data_stage_1["roll_no"]
-            processed_data["subject_codes_format"] = data_stage_1["subject_codes"]
-            processed_data["CMG"] = {}
-            processed_data["marks"] = []
-            processed_data["grades"] = []
-
-            for k1 in range(len(data_no_spcs2) // 2):
-                if data_stage_1["result"] == "ABST":
-                    processed_data["CMG"][data_stage_1["subject_codes"][k1]] = {"marks": data_no_spcs2[k1 * 2],
-                                                                                "grade": data_no_spcs2[k1 * 2 + 1]}
-                    processed_data["marks"].append(data_no_spcs2[k1 * 2])
-                    processed_data["grades"].append(data_no_spcs2[k1 * 2 + 1])
-                else:
-                    processed_data["CMG"][data_stage_1["subject_codes"][k1]] = {"marks": int(data_no_spcs2[k1 * 2]),
-                                                                                "grade": data_no_spcs2[k1 * 2 + 1]}
-                    processed_data["marks"].append(int(data_no_spcs2[k1 * 2]))
-                    processed_data["grades"].append(data_no_spcs2[k1 * 2 + 1])
-
-            processed_data["result"] = data_stage_1["result"]
-
-            if data_stage_1["result"] != "ABST":
-                processed_data["total_marks"] = sum(processed_data["marks"])
-                processed_data["average"] = processed_data["total_marks"] / len(processed_data["marks"])
-                processed_data["percentage"] = processed_data["total_marks"] / (configs_["max_marks_1_subject"] * len(processed_data["subject_codes_format"])) * 100
-
-                processed_data["lowest"] = min(processed_data["marks"])
-                processed_data["highest"] = max(processed_data["marks"])
-                processed_data["comp_subjects"] = data_stage_1["comp_subjects"]
-
-            yield processed_data
-
-    def data_processor():
-        data_line = list(d_processor(i, i+1))[0]
-
-        set_roll_no.set(data_line["roll_no"])
-        set_name.set(data_line["student_name"])
-
-        sub_code_pattern = data_line["subject_codes_format"]
-        def load_mg_entries():
-            # it helps to load the entries and their label w.r.t subject codes in frame_mg_scd.
-            nonlocal frame_mg_scd
-            if frame_mg_scd:
-                frame_mg_scd.destroy()
-            frame_mg_scd = Frame(frame_mg_pri, bg="#FFFFFF")
-            frame_mg_scd.pack(side=LEFT)
-            for codes in sub_code_pattern:
-                fr_row_mg = Frame(frame_mg_scd, bg="#FFFFFF")
-                fr_column_m = Frame(fr_row_mg, bg="#FFFFFF")
-                subject_by_code[codes]["marks_var"] = entry_creator(f'Marks {subject_by_code[codes]["Name"]}', "", master=fr_column_m)
-                fr_column_m.pack(side=LEFT, padx=2)
-                fr_column_g = Frame(fr_row_mg, bg="#FFFFFF")
-                subject_by_code[codes]["grade_var"] = entry_creator(f'Grade {subject_by_code[codes]["Name"]}', "", master=fr_column_g)
-                fr_column_g.pack(side=LEFT, padx=2)
-                fr_row_mg.pack(anchor="nw")
-        load_mg_entries()
-
-        for j in range(len(data_line["marks"])):
-            subject_by_code[sub_code_pattern[j]]["marks_var"].set(data_line["marks"][j])
-            subject_by_code[sub_code_pattern[j]]["grade_var"].set(data_line["grades"][j])
-
-        if data_line["result"] != "ABST":
-            set_total_marks.set(data_line["total_marks"])
-            set_percentage_marks.set("%.1f" % data_line["percentage"])
-            set_average_marks.set("%.1f" % data_line["average"])
-            set_lowest_marks.set(data_line["lowest"])
-            set_highest_marks.set(data_line["highest"])
-
-        lbl_page.config(text=f"Data Page : {i//2+1}")
-
-    all_processed_data = list(d_processor())
-    lbl_total_data = Label(frame_status_area, text=f"Total Data : {len(all_processed_data)}", bg="#FFFFFF", font=("Arial", 14))
+    lbl_total_data = Label(frame_status_area, text=f"Total Data : {len(df_.index)}", bg="#FFFFFF", font=("Arial", 14))
     lbl_total_data.pack()
+
+    frame_search_area = Frame(frame_status_area, bg="#fcffdb", highlightthickness=1, highlightbackground="#000000")
+    search_entry = Entry(frame_search_area, font=('Helvetica', 14), border=2, relief='ridge', textvariable=search_for_val)
+    search_entry.pack(side=LEFT, fill=BOTH, expand=True)
+    search_opt_menu = OptionMenu(frame_search_area, search_by_val, *["Roll No.", "Student Name"])
+    search_opt_menu.config(font=('Helvetica', 14))
+    search_opt_menu.pack(side=LEFT)
+    def on_search_():
+        if search_by_val.get() == "Roll No.":
+            if len(search_for_val.get()):
+                idx = df_.loc[df_["roll_no"].astype(str) == search_for_val.get()].index
+                if len(idx):
+                    display_entry_values(idx[0])
+                else:
+                    messagebox.showinfo("Not Found", "No search results found!")
+
+        elif search_by_val.get() == "Student Name":
+            search_btn.config(state="disabled")
+            search_results = df_.loc[df_["student_name"].str.startswith(search_for_val.get())].index
+            multiple_result_win = Toplevel(root)
+            multiple_result_win.transient(root)
+            multiple_result_win.title(f"Search Results")
+            def close_search_result():
+                search_btn.config(state="normal")
+                multiple_result_win.destroy()
+
+            multiple_result_win.protocol("WM_DELETE_WINDOW", close_search_result)
+
+            lbl_result_found = Label(multiple_result_win, text=f"`{len(search_results)}` Search Result Found", font=("Helvetica", 16, "bold"))
+            lbl_result_found.pack(anchor=W)
+
+            scroll_bar = Scrollbar(multiple_result_win)
+            scroll_bar.pack(side=RIGHT, fill=Y)
+            search_list = Listbox(multiple_result_win, yscrollcommand=scroll_bar.set)
+            idx = 0
+            for result in search_results:
+                print(result)
+                search_list.insert(idx, f"{df_.iloc[result]['roll_no']} -- {df_.iloc[result]['student_name']}")
+                idx += 1
+            search_list.pack(anchor=W, fill=BOTH, expand=True, padx=2, pady=2)
+            def on_select_result(*eve):
+                display_entry_values(search_results[search_list.curselection()[0]])
+
+            search_list.bind("<<ListboxSelect>>", on_select_result)
+            scroll_bar.config(command=search_list.yview)
+
+            multiple_result_win.mainloop()
+
+    search_btn = Button(frame_search_area, text="Search", font=('Helvetica', 14), command=on_search_)
+    search_btn.pack(side=RIGHT)
+    frame_search_area.pack(fill=X, anchor=NE, padx=12, pady=2)
 
     result_area = Frame(frame_status_area, bg="#FFFFFF", highlightthickness=1, highlightbackground="#000000")
     def entry_creator( txt_, value_, master=result_area):
@@ -645,52 +685,93 @@ def begin_status():
         entry_e1 = Entry(frame_e1, textvariable=text_var, font=("Helvetica", 12), highlightthickness=1, highlightbackground="#000000")
         entry_e1.pack(side=LEFT, padx=2)
         frame_e1.pack(pady=2, fill=X)
-        return text_var
+        return {"text_var": text_var, "frame_": frame_e1}
 
     lbl_page = Label(result_area, text="Data Page : 0", font=("Helvetica", 12, "bold"), bg="#FFFFFF")
     lbl_page.pack(anchor="ne")
 
-    set_roll_no = entry_creator("Roll. No.", "")
-    set_name = entry_creator("Name", "")
+    set_roll_no = entry_creator("Roll. No.", "")["text_var"]
+    set_name = entry_creator("Name", "")["text_var"]
+    set_gender = entry_creator("Gender", "")["text_var"]
 
     frame_mg_pri = Frame(result_area, bg="#FFFFFF")
-    frame_mg_scd = None
+    frame_mg_scd = Frame(frame_mg_pri, bg="#FFFFFF")
     frame_mg_pri.pack(fill=X)
 
-    set_total_marks = entry_creator("Marks Total", "")
-    set_percentage_marks = entry_creator("Percentage", "")
-    set_average_marks = entry_creator("Average", "")
-    set_lowest_marks = entry_creator("Lowest", "")
-    set_highest_marks = entry_creator("Highest", "")
+    set_total_marks = entry_creator("Marks Total", "")["text_var"]
+    set_percentage_marks = entry_creator("Percentage", "")["text_var"]
+    set_average_marks = entry_creator("Average", "")["text_var"]
+    set_lowest_marks = entry_creator("Lowest", "")["text_var"]
+    set_highest_marks = entry_creator("Highest", "")["text_var"]
 
+    def display_entry_values(index_):
+        nonlocal frame_mg_scd
+        frame_mg_scd.destroy()
+        frame_mg_scd = Frame(frame_mg_pri, bg="#FFFFFF")
+        frame_mg_scd.pack(fill=X)
+
+        marks_refr = df_.iloc[index_]["MARKS"]
+
+        for c1 in range(0, len(unique_sub_codes), 2):
+            fr2 = Frame(frame_mg_scd)
+            if len(marks_refr.iloc[c1]) > 0:
+                entry_creator(master=fr2, txt_=subject_by_code[unique_sub_codes[c1]]["Name"], value_=marks_refr.iloc[c1])["frame_"].pack(side=LEFT)
+            if c1+1 < len(unique_sub_codes):
+                if len(marks_refr.iloc[c1+1]) > 0:
+                    entry_creator(master=fr2, txt_=subject_by_code[unique_sub_codes[c1+1]]["Name"], value_=marks_refr.iloc[c1+1])["frame_"].pack(side=LEFT)
+            fr2.pack(fill=X, expand=True)
+
+        set_roll_no.set(df_.iloc[index_]['roll_no'])
+        set_name.set(df_.iloc[index_]['student_name'])
+        set_gender.set(df_.iloc[index_]['gender'])
+        set_total_marks.set(df_.iloc[index_]['Total OA'])
+        set_percentage_marks.set(df_.iloc[index_]['Percentage OA'])
+        set_average_marks.set(df_.iloc[index_]['Average OA'])
+
+        highest_ = {"sub": None, "marks": 0}
+        lowest_ = {"sub": None, "marks": 0}
+        for c2 in range(len(unique_sub_codes)):
+            if c2 == 0:
+                lowest_["marks"] = int(marks_refr.iloc[c2])
+                lowest_["sub"] = subject_by_code[unique_sub_codes[c2]]["Name"]
+
+            if str(marks_refr.iloc[c2]).isnumeric() and int(marks_refr.iloc[c2]) > highest_["marks"]:
+                highest_["marks"] = int(marks_refr.iloc[c2])
+                highest_["sub"] = subject_by_code[unique_sub_codes[c2]]["Name"]
+
+            elif str(marks_refr.iloc[c2]).isnumeric() and int(marks_refr.iloc[c2]) < lowest_["marks"]:
+                lowest_["marks"] = int(marks_refr.iloc[c2])
+                lowest_["sub"] = subject_by_code[unique_sub_codes[c2]]["Name"]
+        set_highest_marks.set(highest_["sub"])
+        set_lowest_marks.set(lowest_["sub"])
+
+        lbl_page.config(text=f"Data Page : {index_+1}")
     def on_prev():
-        nonlocal i
-        if i - prv_next_step > -1:
-            button_next.config(state="normal")
-            i -= prv_next_step
-            data_processor()
-        else:
-            button_next.config(state="normal")
+        nonlocal page_indexer
+        button_next.config(state="normal")
+        if page_indexer-1 < 0:
             button_prev.config(state="disabled")
+            return
+        page_indexer -= 1
+        display_entry_values(page_indexer)
 
     button_prev = Button(result_area, text="Previous", font=("Helvetica", 16), command=on_prev)
     button_prev.pack(side=LEFT, padx=1, pady=1)
 
     def on_next():
-        nonlocal i
-        if i + prv_next_step < len(file_lines):
-            button_prev.config(state="normal")
-            i+=prv_next_step
-            data_processor()
-        else:
+        nonlocal page_indexer
+        button_prev.config(state="normal")
+        page_indexer += 1
+        display_entry_values(page_indexer)
+        if page_indexer + 1 == len(df_.index):
             button_next.config(state="disabled")
-            button_prev.config(state="normal")
 
     button_next = Button(result_area, text="Next", font=("Helvetica", 16), command=on_next)
     button_next.pack(side=RIGHT, padx=1, pady=1)
 
+    display_entry_values(0)
+
     result_area.pack(side=LEFT, anchor="nw", padx=12, fill=X, expand=True)
-    data_processor()
 
     frame_status_area.pack(fill=BOTH, side=LEFT, expand=True, padx=2, pady=2)
 

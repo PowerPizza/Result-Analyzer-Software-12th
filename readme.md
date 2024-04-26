@@ -10,7 +10,7 @@ Data should be in a pair of two lines let assume DATA_LINE1 and DATA_LINE2
     DATA_LINE2 :- SUB1_MARKS SUB1_GRADE SUB2_MARKS SUB2_GRADE ...... SUB(n)_MARKS SUB(n)_GRADE
     
 ### How should be DATA_LINE1 ?
-1. ROLL_NO must be of 7 digits only.
+1. ROLL_NO should be in range of 6 to 10 digits.
 2. Gender M for male, F for female
 3. NAME can contain white spaces.
 4. SUB_CODE1 to infinity works just remember that DATA_LINE2 should contain marks and grade of SUB_CODE(n) in proper format.

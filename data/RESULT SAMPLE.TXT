@@ -1,0 +1,45 @@
+ROLL    F S NAME OF CANDIDATE                                   --------------------SUBJECTS------------------  INT-SB-GRD   RES                COMP
+NO      L X                                                     SUB CD  SUB CD  SUB CD  SUB CD  SUB CD  SUB CD  GR1 GR2 GR3                     SUB
+                                                                MKS GR  MKS GR  MKS GR  MKS GR  MKS GR  MKS GR 
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+SCHOOL : - 60171   M S T D  SARASWATI V M NEHRU NAGAR GHAZIABAD UP  
+
+21669714   M ABHISHEK GUPTA                                      301     042     043     041     048              A1 A1 A1    PASS                      
+                                                                 072  C1 095  A1 088  A2 078  A2 091  A2        
+21669715   M AKSHAY BHARDWAJ                                     301     042     043     041     048              A1 A1 A1    PASS                      
+                                                                 068  C2 055  D1 061  C1 063  B2 077  B2        
+21669716   M AMAN GUPTA                                          301     042     043     041     048              A2 A2 A2    PASS                      
+                                                                 056  D1 065  B2 066  B2 045  D2 073  C1        
+21669717   F ANJALI BAHUKHANDI                                   301     042     043     041     065              A2 A2 A2    PASS                      
+                                                                 088  A2 061  C2 053  D1 047  D1 080  C1        
+21669718   M ANKIT SINHA                                         301     042     043     041     048              B1 B1 B1    PASS                      
+                                                                 065  C2 061  C2 060  C2 068  B1 075  C1        
+21669719   M ARPIT KUMAR                                         301     042     043     041     048              B1 B1 B1    COMP               041    
+                                                                 070  C1 055  D1 052  D2 029  E  076  B2        
+
+21669720   M ATUL                                                301     042     043     041     048              A2 A2 A2    PASS                      
+                                                                 076  B2 086  A2 076  B1 093  A1 084  B1        
+21669721   M ATUL SHUKLA                                         301     042     043     041     048              A1 A1 A1    PASS                      
+                                                                 076  B2 065  B2 060  C2 052  C2 086  A2        
+21669722   F AVNI SHARMA                                         301     042     043     041     048              B2 B2 B2    PASS                      
+                                                                 082  B1 064  C1 059  C2 058  C1 069  C2        
+21669723   M DHEERAJ                                             301     042     043     041     048              B2 B2 B2    PASS                      
+                                                                 064  C2 056  C2 060  C2 046  D1 074  C1        
+21669724   M DIPANSHU SHARMA                                     301     042     043     041     048              A1 A1 A1    PASS                      
+                                                                 073  C1 068  B2 058  D1 058  C1 080  B2        
+21669725   M DIVYANSH VASHISTH                                   301     042     043     041     048              B1 B1 B1    PASS                      
+                                                                 072  C1 062  C1 060  C2 059  C1 071  C1        
+21669726   M HARSH KUMAR                                         301     042     043     041     065              B1 B1 B1    PASS                      
+                                                                 068  C2 069  B2 053  D1 054  C2 094  A2        
+21669727   M HIMANSHU MISHRA                                     301     042     043     041     048              B1 B1 B1    PASS                      
+                                                                 059  D1 055  D1 051  D2 045  D2 082  B1        
+21669728   M HIMANSHU SINGH                                      301     042     043     041     065              B2 B2 B2    PASS                      
+                                                                 059  D1 059  C2 059  C2 044  D2 080  C1        
+21669729   F ISHIKA SINGH                                        301     042     043     041     048              A1 A1 A1    PASS                      
+                                                                 073  C1 075  B1 061  C1 070  B1 073  C1        
+
+21669730   M JITENDRA                                            301     042     043     041     048              A1 A1 A1    PASS                      
+                                                                 076  B2 088  A1 086  A2 087  A1 068  C2        
+
+

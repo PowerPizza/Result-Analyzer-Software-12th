@@ -6,5 +6,5 @@ def rm_extra_spaces(string_):
     return string_
 
 if __name__ == '__main__':
-    s = "sdnakn djadnjndf      sajdna djsdja   jsdnanda       sjdnadn              djnsa   s  sdad    da"
+    s = "  sdnakn djadnjndf      sajdna djsdja   jsdnanda       sjdnadn              djnsa   s  sdad    da"
     print(rm_extra_spaces(s))

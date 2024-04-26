@@ -64,5 +64,5 @@ def list_formatter(lst):
     return lst
 
 if __name__ == '__main__':
-    print(list_formatter(["hi", '', "ss", '']))
+    # print(list_formatter(["hi", '', "ss", '']))
     pass

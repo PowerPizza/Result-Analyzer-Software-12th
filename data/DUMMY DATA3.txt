@@ -12,9 +12,12 @@ NO      L X                                                     SUB CD  SUB CD  
 SCHOOL : - 60834  SSD  GHAZIABAD UP
 
 2178469   M KRISHN RAI                                         301     042     043     041     048              A1 A1 A1    PASS
+2178469   M KRISHN RAI                                         301     042     043     041     048              A1 A1 A1    PASS
+2178400   M KRISHN RAI                                         301     042     043     041     048              A1 A1 A1    PASS
+dasdasdad
                                                                 085  B1 095  A1 095  A1 088  A2 091  A2
-2178470   F ANUL YADAV                                         301     042     043     044     065              A1 A1 A1    PASS
-                                                                087  A2 062  C2 058  D1 065  C2 079  C1
+2178470   F ANUL YADAV                                      041   301     042     043     044     065              A1 A1 A1    PASS
+                                                           090 A1     087  A2 062  C2 058  D1 065  C2 079  C1
 2167871   M RAMA  KUMAR                                        301     065     042     043     041              A1 A1 A1    PASS
                                                                 089  A2 090  A2 078  B1 089  A2 095  A1
 2167845   M ABHIJEET PAL                                       301     065     042     043     041              A1 A1 A1    PASS
