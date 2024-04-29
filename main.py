@@ -215,6 +215,18 @@ def writeToExcel():
         df_single.to_excel(excel_writer, sheet_name=subject_by_code[uni_subcode]["Name"], index=False)
         df_col_idxr += 2
 
+    # --------- SEPARATING TOPPERS (1ST 2ND 3RD.....nTH) IN NEW EXCEL SHEETS ------------
+    df_cpy = DataFrame(df_)
+    df_cpy["Percentage B5"] = to_numeric(df_cpy["Percentage B5"], errors="coerce")
+    df_cpy = df_cpy.sort_values("Percentage B5", ascending=False)
+    b5_perc_col_idx = list(df_cpy.columns).index("Percentage B5")
+
+    df_cpy.columns = merged_column_excel_format
+    sheet_names = {"95 PLUS": {"r1": 95, "r2": 100}, "Between 90 to 95": {"r1": 90, "r2": 95}, "Between 85 to 90": {"r1": 85, "r2": 90}, "Between 70 to 85": {"r1": 75, "r2": 85}, "Between 65 to 70": {"r1": 65, "r2": 70}, "Between 45 to 65": {"r1": 45, "r2": 65}, "Below 40": {"r1": 0, "r2": 40}}
+    for limit_ in sheet_names:
+        range_sheet = df_cpy[(df_cpy.iloc[:, b5_perc_col_idx] >= sheet_names[limit_]["r1"]) & (df_cpy.iloc[:, b5_perc_col_idx] < sheet_names[limit_]["r2"])]
+        range_sheet.to_excel(excel_writer, sheet_name=limit_, index=False)
+
     # --------- ADDING HEADER WITH MERGED CELLS IN EXCEL FILE -----------
     excel_writer.close()  # necessary!! since I am not using with block.
     wb = openpyxl.load_workbook(export_file.name)
@@ -248,7 +260,8 @@ def writeToExcel():
                 merge_step += table_header[i][1] - 1
     createOverAllSheetLayout("OverAll Result")
     createOverAllSheetLayout("Top 10")
-
+    for btw_sheet in sheet_names:
+        createOverAllSheetLayout(btw_sheet)
 
     # COLOURING COLUMNS OF ABST AND COMP
     ws = wb["OverAll Result"]
