@@ -5,11 +5,11 @@ NO      L X                                                     SUB CD  SUB CD  
 
 SCHOOL : - 60171   M S T D  SARASWATI V M NEHRU NAGAR GHAZIABAD UP  
 
-21669714   M ABHISHEK GUPTA                                      301     042     043     041     048              A1 A1 A1    PASS                      
+21669714   M ABHISHEK GUPTA                                      301     042     043     041     048              A1 A1 A1    PASS
                                                                  072  C1 095  A1 088  A2 078  A2 091  A2        
 21669715   M AKSHAY BHARDWAJ                                     301     042     043     041     048              A1 A1 A1    PASS                      
                                                                  068  C2 055  D1 061  C1 063  B2 077  B2        
-21669716   M AMAN GUPTA                                          301     042     043     041     048              A2 A2 A2    PASS                      
+21669716   M AMAN GUPTA                                          301     042     043     041     048              A2 A2 A2    PASS
                                                                  056  D1 065  B2 066  B2 045  D2 073  C1        
 21669717   F ANJALI BAHUKHANDI                                   301     042     043     041     065              A2 A2 A2    PASS                      
                                                                  088  A2 061  C2 053  D1 047  D1 080  C1        

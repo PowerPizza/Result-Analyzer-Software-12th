@@ -2,7 +2,9 @@
 This software is personally build for sort and structuring data of CBSE board examinations result of students. It requires a txt file 
 which contain data in a format describe below then this software will sort students, their gender, their roll number and
 percentage average etc. Sorted data can be exported as an Excel or JSON file.
-    
+
+It also provides graphs of result it produced.
+
 ## Data format
 Data should be in a pair of two lines let assume DATA_LINE1 and DATA_LINE2
 
@@ -43,4 +45,4 @@ for example : 4 + 1 = 5 where no_of_best_subjects = 4 and the 1 here for english
 then Physics chemistry .... so we can use this entry to do that. Just provide subject codes and seperate them
 using ','.
 
-### [Download for Windows 10 (x64)](https://drive.google.com/drive/folders/1txIDe8C4zpgAWWFcaA6hIGqVmqLnF5XQ?usp=sharing)
+### [Download for Windows 10 (x64)](https://drive.google.com/file/d/13NoeaUgvmlt6fZ_ursbO3zzLMVktMhTg/view?usp=sharing)

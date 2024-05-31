@@ -8,11 +8,12 @@ from tkinter import *
 from tkinter import filedialog, messagebox
 from string_helper_funcs import *
 from other_functions import *
-import openpyxl
 from openpyxl.styles import Alignment, PatternFill
+from openpyxl import load_workbook
 import webbrowser
 from pandas import DataFrame, to_numeric, ExcelWriter
 from pandas.io.formats import excel
+import matplotlib.pyplot as plt
 
 print("Starting . . . .")
 root = tkinter.Tk()
@@ -31,7 +32,7 @@ all_processed_data = None
 status_area_frame = None
 excel.ExcelFormatter.header_style = None
 df_ = DataFrame([[0, 0, 0], [0, 0, 0]])
-unique_sub_codes = configs_["dominant_subjects"]
+unique_sub_codes = list(configs_["dominant_subjects"])
 logs_string = ""
 show_loading = False
 # --------------------- END -----------------------
@@ -222,14 +223,17 @@ def writeToExcel():
     b5_perc_col_idx = list(df_cpy.columns).index("Percentage B5")
 
     df_cpy.columns = merged_column_excel_format
-    sheet_names = {"95 PLUS": {"r1": 95, "r2": 100}, "Between 90 to 95": {"r1": 90, "r2": 95}, "Between 85 to 90": {"r1": 85, "r2": 90}, "Between 70 to 85": {"r1": 75, "r2": 85}, "Between 65 to 70": {"r1": 65, "r2": 70}, "Between 45 to 65": {"r1": 45, "r2": 65}, "Below 40": {"r1": 0, "r2": 40}}
+    sheet_names = {"95 PLUS": {"r1": 95, "r2": 100}, "Between 90 to 95": {"r1": 90, "r2": 95},
+                   "Between 80 to 90": {"r1": 80, "r2": 90}, "Between 70 to 80": {"r1": 70, "r2": 80},
+                   "Between 60 to 70": {"r1": 60, "r2": 70}, "Between 50 to 60": {"r1": 50, "r2": 60},
+                   "Below 60": {"r1": 0, "r2": 60}}
     for limit_ in sheet_names:
         range_sheet = df_cpy[(df_cpy.iloc[:, b5_perc_col_idx] >= sheet_names[limit_]["r1"]) & (df_cpy.iloc[:, b5_perc_col_idx] < sheet_names[limit_]["r2"])]
         range_sheet.to_excel(excel_writer, sheet_name=limit_, index=False)
 
     # --------- ADDING HEADER WITH MERGED CELLS IN EXCEL FILE -----------
     excel_writer.close()  # necessary!! since I am not using with block.
-    wb = openpyxl.load_workbook(export_file.name)
+    wb = load_workbook(export_file.name)
 
     def createOverAllSheetLayout(sheet_name):
         ws_ = wb[sheet_name]
@@ -309,6 +313,8 @@ def on_add_data_file():
             status_area_frame = status_area_frame.destroy()
         try:
             dataLineExtractor(selected_file)
+        except KeyError as e:
+            messagebox.showerror("Invalid File",f"Seems subject code {e} is not registered, Or maybe the file is invalid.")
         except BaseException as e:
             messagebox.showerror("Invalid File", f"File format is invalid please provide a valid file.\nerror : {e}")
     add_data_file_opt.config(text="Add Data File", state="normal")
@@ -322,6 +328,8 @@ def on_click_export():
     root.config(cursor='watch')
     try:
         writeToExcel()
+    except KeyError as e:
+        messagebox.showerror("Failed", f"Seems subject code {e} is not registered if its the case so please consider using `config` tab to add this subject code.")
     except BaseException as e:
         messagebox.showerror("Failed", f"Error in exporting excel file...\nError : {e}")
     export_data_file_opt.config(text="Export Data File", state="normal")
@@ -616,6 +624,105 @@ def on_click_about():
 about_opt = Button(header_canva, text="About", font=("Helvetica", 12), command=on_click_about)
 about_opt.pack(padx=2, pady=2, side=LEFT)
 
+
+def on_click_graph():
+    if not selected_file:
+        messagebox.showinfo("Data Not Available", "Please add a data file first.")
+        return
+    graphs_opt.config(state="disabled")
+    graph_canvas = Canvas(content_left_canva, bg="#FFFFFF", highlightthickness=2, highlightbackground="#000000")
+
+    def onClickCloseGraph():
+        graph_canvas.destroy()
+        plt.close(1)
+        graphs_opt.config(state="normal")
+
+    close_btn = Button(graph_canvas, text="Close", foreground="#FFFFFF", background="#db2518", command=onClickCloseGraph)
+    close_btn.pack(padx=2, pady=2, anchor=NE)
+
+    fr_graph_options = Frame(graph_canvas, bg="#FFFFFF")
+
+    def crt_sub_avg_graph():
+        df_over_all = DataFrame(df_)
+        df_over_all.columns = list(range(0, len(df_over_all.columns)))
+        df_col_idxr = 3
+        avg_by_sub = {}
+        for uni_subcode in unique_sub_codes:
+            df_single = DataFrame(df_over_all[[0, 1, 2, df_col_idxr, df_col_idxr + 1]])
+            df_single.loc[:, df_col_idxr] = to_numeric(df_single[df_col_idxr], errors='coerce')
+            avg_marks = df_single[df_col_idxr].sum()
+            if avg_marks != 0:
+                avg_marks = "%0.2f" % (avg_marks / (len(df_single.index) - df_single[df_col_idxr].isna().sum()))  # .isna().sum() counts NaN values
+            avg_by_sub[subject_by_code[uni_subcode]["Name"]] = float(avg_marks)
+            df_col_idxr += 2
+        plt.figure("Subject Average Graph", figsize=(12, 6))
+        plt.title("Subject Average Graph")
+        plt.subplots_adjust(bottom=0.19, top=1)
+        my_bar = plt.bar(list(avg_by_sub.keys()), list(avg_by_sub.values()), width=0.4, color="blue")
+        plt.xlabel("Subjects")
+        plt.ylabel("Average")
+        plt.xticks(rotation=45)
+        plt.yticks(range(0, int(max(list(avg_by_sub.values()))), 10))
+        plt.tight_layout()
+        idxr = 0
+        for rect in my_bar:
+            h = rect.get_height()
+            plt.text(rect.get_x() + (rect.get_width() / 4.0), h, str(list(avg_by_sub.values())[idxr]))
+            idxr += 1
+        plt.show()
+
+    subject_avg_graph = Button(fr_graph_options, text="Subject Average Graph", background="#c8ffa8", font=("Arial", 14), relief="ridge", command=crt_sub_avg_graph)
+    subject_avg_graph.pack(anchor=NW, padx=2, pady=3)
+
+    def on_std_sub_graph():
+        sub_select_win = Toplevel(root)
+        sub_select_win.transient(root)
+        sub_select_win.title("Select subject")
+        sub_select_win.geometry("250x300")
+        def on_select_sub(*eve):
+            plt.close(1)
+            selected_sub_idx = lb_.curselection()[0]
+
+            df_over_all = DataFrame(df_)
+            df_over_all.columns = list(range(0, len(df_over_all.columns)))
+            sub_idx_wrt_df = (selected_sub_idx*2)+3
+            df_single = DataFrame(df_over_all[[0, 1, 2, sub_idx_wrt_df]])
+            df_single.loc[:, sub_idx_wrt_df] = to_numeric(df_single[sub_idx_wrt_df], errors='coerce')
+            x_axis_vals = list(df_single[[1]].values.flat)
+            for i2 in range(len(x_axis_vals)):
+                x_axis_vals[i2] = x_axis_vals[i2] + f" ({i2})"
+            plt.figure(f"{subject_by_code[unique_sub_codes[selected_sub_idx]]['Name']} Marks Graph", figsize=(12, 6))
+            plt.title(f"{subject_by_code[unique_sub_codes[selected_sub_idx]]['Name']} Marks Graph")
+            plt.bar(x_axis_vals, list(df_single[[sub_idx_wrt_df]].values.flat))
+            plt.tight_layout()
+            plt.xticks(rotation=270)
+            plt.subplots_adjust(bottom=0.21, top=0.95)
+            plt.xlabel("Students")
+            plt.ylabel("Marks")
+            plt.show()
+
+        lb_ = Listbox(sub_select_win, font=("Helvetica", 12))
+        idx_ = 0
+        for sub_code in unique_sub_codes:
+            lb_.insert(idx_, f"({sub_code}) {subject_by_code[sub_code]['Name']}")
+            idx_ += 1
+        lb_.pack(fill=BOTH, expand=True, padx=2, pady=2)
+        lb_.bind("<<ListboxSelect>>", on_select_sub)
+
+        sub_select_win.mainloop()
+
+    std_sub_graph = Button(fr_graph_options, text="Student Subject Graph", background="#c8ffa8", font=("Arial", 14), relief="ridge", command=on_std_sub_graph)
+    std_sub_graph.pack(anchor=NW, padx=2, pady=3)
+
+    fr_graph_options.pack(fill=BOTH, padx=2, pady=2, expand=True)
+
+    graph_canvas.place(x=0, y=0, relwidth=1.0, relheight=1.0)
+
+
+graphs_opt = Button(header_canva, text="Graphs", font=("Helvetica", 12), command=on_click_graph)
+graphs_opt.pack(padx=2, pady=2, side=LEFT)
+
+
 label_imported_file = Label(header_canva, text="", font=("Helvetica", 12), bg="#FFFFFF")
 label_imported_file.pack(side=LEFT, pady=2, padx=2)
 header_canva.pack(fill=X, ipadx=2, ipady=2, padx=2, pady=1)
@@ -655,7 +762,7 @@ def begin_status(selected_file_name):
 
         elif search_by_val.get() == "Student Name":
             search_btn.config(state="disabled")
-            search_results = df_.loc[df_["student_name"].str.startswith(search_for_val.get())].index
+            search_results = df_.loc[df_["student_name"].str.lower().str.startswith(search_for_val.get().lower())].index
             multiple_result_win = Toplevel(root)
             multiple_result_win.transient(root)
             multiple_result_win.title(f"Search Results")
@@ -673,7 +780,7 @@ def begin_status(selected_file_name):
             search_list = Listbox(multiple_result_win, yscrollcommand=scroll_bar.set)
             idx = 0
             for result in search_results:
-                print(result)
+                # print(result)
                 search_list.insert(idx, f"{df_.iloc[result]['roll_no']} -- {df_.iloc[result]['student_name']}")
                 idx += 1
             search_list.pack(anchor=W, fill=BOTH, expand=True, padx=2, pady=2)
